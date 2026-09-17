@@ -1,0 +1,24 @@
+name: Weekly Digest
+"on":
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout leadfinder
+        uses: actions/checkout@v4
+        with:
+          repository: moneyhunterss/leadfinder
+          token: ${{ secrets.LEADFINDER_PAT }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install requests PyYAML
+      - name: Send weekly digest
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python weekly_digest.py || true
