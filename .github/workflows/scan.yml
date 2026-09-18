@@ -1,4 +1,4 @@
-name: LeadFinder Scan
+name: LeadFinder Notify
 "on":
   schedule:
     - cron: '*/5 * * * *'
@@ -6,38 +6,24 @@ name: LeadFinder Scan
 permissions:
   contents: write
 jobs:
-  scan:
+  notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 3
     steps:
-      - name: Checkout leadfinder (private)
+      - name: Checkout leadfinder
         uses: actions/checkout@v4
         with:
           repository: moneyhunterss/leadfinder
           token: ${{ secrets.LEADFINDER_PAT }}
-      
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      
       - run: pip install requests PyYAML
-      
-      - run: mkdir -p data && ([ -f data/leads.json ] && cp data/leads.json data/leads_prev.json || echo '[]' > data/leads_prev.json)
-      
-      - run: python scan.py
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      
-      - run: python notify.py || true
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      
       - run: |
-          git config user.name "bot"
-          git config user.email "bot@users.noreply.github.com"
-          git add data/ || true
-          git diff --cached --quiet || (git commit -m "scan $(date -u)" && git push)
+          mkdir -p data
+          [ -f data/leads.json ] && cp data/leads.json data/leads_prev.json || echo '[]' > data/leads_prev.json
+      - name: Notify Telegram with new leads
         env:
-          GITHUB_TOKEN: ${{ secrets.LEADFINDER_PAT }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python notify.py || true
