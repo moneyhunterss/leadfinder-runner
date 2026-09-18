@@ -1,4 +1,4 @@
-name: LeadFinder Notify
+name: Notify
 "on":
   schedule:
     - cron: '*/5 * * * *'
@@ -8,7 +8,7 @@ permissions:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 2
     steps:
       - name: Checkout leadfinder
         uses: actions/checkout@v4
@@ -21,8 +21,8 @@ jobs:
       - run: pip install requests PyYAML
       - run: |
           mkdir -p data
-          [ -f data/leads.json ] && cp data/leads.json data/leads_prev.json || echo '[]' > data/leads_prev.json
-      - name: Notify Telegram with new leads
+          if [ -f data/leads.json ]; then cp data/leads.json data/leads_prev.json; else echo '[]' > data/leads_prev.json; fi
+      - name: Send new leads to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
