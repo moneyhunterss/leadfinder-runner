@@ -9,6 +9,10 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    env:
+      LEADFINDER_PAT: ${{ secrets.LEADFINDER_PAT }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     steps:
       - name: Checkout leadfinder
         uses: actions/checkout@v4
@@ -19,19 +23,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install requests PyYAML
-      - name: Send new leads to Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: Notify + update prev state
         run: |
           mkdir -p data
           [ ! -f data/leads_prev.json ] && echo '[]' > data/leads_prev.json
           python notify.py || true
-          # After notifying, save current as prev for next run
           [ -f data/leads.json ] && cp data/leads.json data/leads_prev.json
           git config user.name "bot"
           git config user.email "bot@users.noreply.github.com"
           git add data/leads_prev.json || true
-          git diff --cached --quiet || (git commit -m "update prev state" && git push)
-        env:
-          GITHUB_TOKEN: ${{ secrets.LEADFINDER_PAT }}
+          git diff --cached --quiet || (git commit -m "update prev state" && git push https://x-access-token:${LEADFINDER_PAT}@github.com/moneyhunterss/leadfinder.git HEAD:main || true)
